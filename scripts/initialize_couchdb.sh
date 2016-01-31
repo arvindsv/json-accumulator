@@ -16,9 +16,3 @@ while ! curl -s -o /dev/null "${COUCHDB_BASE_URL}"; do
     echo "Waiting for couchdb to start ..."
     sleep 1
 done
-
-# Initialize "schemas"
-(cd ./schemas; for each_schema in *; do
-    echo "Initializing schema: $each_schema"
-    curl -X PUT "${COUCHDB_BASE_URL}/${each_schema}"
-done)
