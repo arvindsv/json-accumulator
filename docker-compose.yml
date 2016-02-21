@@ -1,0 +1,18 @@
+version: '2'
+services:
+  db:
+    image: frodenas/couchdb:1.6
+    environment:
+      COUCHDB_USERNAME: couch
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+
+  accumulator:
+    image: arvindsv/json-accumulator
+    depends_on:
+      - db
+    environment:
+      RACK_ENV: production
+      COUCHDB_USERNAME: couch
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+    ports:
+      - "4567"
