@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 require 'sinatra'
 require 'net/http'
 require 'json'
@@ -7,15 +9,20 @@ require 'securerandom'
 set :bind, '0.0.0.0'
 
 class Repo
-  BASE_URL = "http://localhost:5984"
   DOCUMENTS_FILTER_NAME = "only_documents"
+
+  def initialize
+    @couch_base_url = ENV['COUCH_BASE_URL'] || 'http://db:5984'
+    @couchdb_username = ENV['COUCHDB_USERNAME'] || 'couch'
+    @couchdb_password = ENV['COUCHDB_PASSWORD'] || 'password'
+  end
 
   def initialize_db_for db_name
     return if db_exists? db_name
 
-    uri = URI("#{BASE_URL}/#{db_name}")
+    uri = URI("#{@couch_base_url}/#{db_name}")
     request_to_db = Net::HTTP::Put.new(uri)
-    request_to_db.basic_auth 'admin', 'password'
+    request_to_db.basic_auth @couchdb_username, @couchdb_password
 
     response_from_db = Net::HTTP.start(uri.hostname, uri.port) {|http| http.request(request_to_db)}
     raise "Failed to initialize repo for: #{db_name} - Message: #{response_from_db.body}" unless response_from_db.kind_of? Net::HTTPSuccess
@@ -24,9 +31,9 @@ class Repo
   end
 
   def latest_of db_name
-    uri = URI("#{BASE_URL}/#{db_name}/_changes?descending=true&limit=1&include_docs=true&filter=#{db_name}/#{DOCUMENTS_FILTER_NAME}")
+    uri = URI("#{@couch_base_url}/#{db_name}/_changes?descending=true&limit=1&include_docs=true&filter=#{db_name}/#{DOCUMENTS_FILTER_NAME}")
     request_to_db = Net::HTTP::Get.new(uri)
-    request_to_db.basic_auth 'admin', 'password'
+    request_to_db.basic_auth @couchdb_username, @couchdb_password
 
     response_from_db = Net::HTTP.start(uri.hostname, uri.port) {|http| http.request(request_to_db)}
     raise "Failed to get latest from: #{db_name} - Message: #{response_from_db.body}" unless response_from_db.kind_of? Net::HTTPSuccess
@@ -37,9 +44,9 @@ class Repo
   end
 
   def add_to db_name, information_as_json
-    uri = URI("#{BASE_URL}/#{db_name}/#{SecureRandom.uuid}")
+    uri = URI("#{@couch_base_url}/#{db_name}/#{SecureRandom.uuid}")
     request_to_db = Net::HTTP::Put.new(uri)
-    request_to_db.basic_auth 'admin', 'password'
+    request_to_db.basic_auth @couchdb_username, @couchdb_password
 
     request_to_db.body = {type: "document", content: information_as_json}.to_json
     response_from_db = Net::HTTP.start(uri.hostname, uri.port) {|http| http.request(request_to_db)}
@@ -49,10 +56,10 @@ class Repo
   end
 
   def update_design_doc type_of_document, db_name, name, func
-    uri = URI("#{BASE_URL}/#{db_name}/_design/#{db_name}")
+    uri = URI("#{@couch_base_url}/#{db_name}/_design/#{db_name}")
     response_from_db = Net::HTTP.start(uri.hostname, uri.port) do |http|
       request_to_db = Net::HTTP::Get.new(uri)
-      request_to_db.basic_auth 'admin', 'password'
+      request_to_db.basic_auth @couchdb_username, @couchdb_password
       response_from_db = http.request(request_to_db)
 
       design_doc = {"_id" => "_design/#{db_name}", "language" => "javascript"}
@@ -69,7 +76,7 @@ class Repo
       end
 
       request_to_db = Net::HTTP::Put.new(uri)
-      request_to_db.basic_auth 'admin', 'password'
+      request_to_db.basic_auth @couchdb_username, @couchdb_password
       request_to_db.body = design_doc.to_json
       response_from_db = http.request(request_to_db)
       raise "Failed to add #{type_of_document} #{name} to #{db_name} - Message: #{response_from_db.body} - Body sent was: #{request_to_db.body}" unless response_from_db.kind_of? Net::HTTPSuccess
@@ -78,21 +85,21 @@ class Repo
   end
 
   def find_using_view db_name, view_name, key_to_search_for
-    uri = URI("#{BASE_URL}/#{db_name}/_design/#{db_name}/_view/#{view_name}")
-    uri.query = "key=#{CGI::escape('"' + key_to_search_for + '"')}" unless key_to_search_for.nil?
+    uri = URI("#{@couch_base_url}/#{db_name}/_design/#{db_name}/_view/#{view_name}")
+    uri.query = "key=#{CGI::escape(key_to_search_for)}" unless key_to_search_for.nil?
     request_to_db = Net::HTTP::Get.new(uri)
-    request_to_db.basic_auth 'admin', 'password'
+    request_to_db.basic_auth @couchdb_username, @couchdb_password
 
     response_from_db = Net::HTTP.start(uri.hostname, uri.port) {|http| http.request(request_to_db)}
-    raise "Failed to get latest from: #{db_name} - Req: #{request_to_db} - Message: #{response_from_db.body}" unless response_from_db.kind_of? Net::HTTPSuccess
+    raise "Failed to find using view #{view_name}: #{db_name} - Req: #{request_to_db} - Message: #{response_from_db.body}" unless response_from_db.kind_of? Net::HTTPSuccess
     return JSON.parse(response_from_db.body)["rows"]
   end
 
   private
   def db_exists? db_name
-    uri = URI("#{BASE_URL}/#{db_name}")
+    uri = URI("#{@couch_base_url}/#{db_name}")
     request_to_db = Net::HTTP::Get.new(uri)
-    request_to_db.basic_auth 'admin', 'password'
+    request_to_db.basic_auth @couchdb_username, @couchdb_password
 
     response_from_db = Net::HTTP.start(uri.hostname, uri.port) {|http| http.request(request_to_db)}
     response_from_db.kind_of? Net::HTTPSuccess
@@ -119,12 +126,12 @@ get '/:db_name/latest' do |db_name|
   repo.latest_of db_name
 end
 
-post '/:db_name/:type/:view_name' do |db_name, type_of_design_doc, view_name|
+post '/:db_name/view/:view_name' do |db_name, view_name|
   request.body.rewind
   view_function_body = request.body.read
 
   repo.initialize_db_for db_name
-  repo.update_design_doc type_of_design_doc, db_name, view_name, view_function_body
+  repo.update_design_doc "view", db_name, view_name, view_function_body
 end
 
 get '/:db_name/view/:view_name' do |db_name, view_name|
