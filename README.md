@@ -1,6 +1,6 @@
-### An accumulator for JSON data:
+### A generic accumulator for JSON data:
 
-This a reasonably thin wrapper over CouchDB, to be used by a generic accumulator of JSON data by various other apps of
+This a reasonably thin wrapper over CouchDB, to be used as a generic accumulator of JSON data by various other apps of
 mine.
 
 ##### Add data:
