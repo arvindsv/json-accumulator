@@ -1,7 +1,10 @@
-version: '2'
+version: '3'
+
 services:
   db:
     image: frodenas/couchdb:1.6
+    volumes:
+      - ./data:/data
     environment:
       COUCHDB_USERNAME: couch
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
