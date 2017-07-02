@@ -10,7 +10,7 @@ services:
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
 
   accumulator:
-    image: arvindsv/json-accumulator:1.0.0
+    image: arvindsv/json-accumulator:1.0.1
     depends_on:
       - db
     environment:
