@@ -18,4 +18,4 @@ services:
       COUCHDB_USERNAME: couch
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
     ports:
-      - "4567"
+      - "4567:4567"

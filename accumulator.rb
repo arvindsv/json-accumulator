@@ -52,3 +52,24 @@ post '/:db_name' do |db_name|
   headers 'Location' => uri
   response
 end
+
+get '/:db_name/doc/:unique_doc_id' do |db_name, unique_doc_id|
+  repo.initialize_db_for db_name
+  response_status, revision, response_body = repo.get_unique_doc db_name, unique_doc_id
+
+  status response_status
+  etag revision
+  response_body
+end
+
+put '/:db_name/doc/:unique_doc_id/?:revision?' do |db_name, unique_doc_id, revision|
+  request.body.rewind
+  info_to_save = JSON.parse(request.body.read)
+
+  repo.initialize_db_for db_name
+  response_status, revision, response_body = repo.update_unique_doc db_name, unique_doc_id, revision, info_to_save
+
+  status response_status
+  etag revision
+  response_body
+end

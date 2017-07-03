@@ -3,7 +3,7 @@
 This a reasonably thin wrapper over CouchDB, to be used as a generic accumulator of JSON data by various other apps of
 mine.
 
-##### Add data:
+##### Add (list-like) data:
 
 Add some data to a made-up repository called "db1":
 
@@ -26,6 +26,29 @@ This data does not need to follow any kind of a schema. It just needs to be vali
 ```
 $ curl -X GET http://server/db1/latest
 {"url":"http://bbb.com/def","value":789}
+```
+
+##### Add (unique) data
+
+This allows you to add data, which is not list-like:
+
+```
+$ curl -X GET http://localhost:9090/db1/doc/metadata; echo
+{
+  "message": "Route not found"
+}
+
+$ curl -v -X PUT http://json-accumulator-server/db1/doc/metadata -d '{ "abcd": "defg" }' 2>&1 | grep -i Etag
+< Etag: "1-94ac6a8be99044f4324cd24d7af43b30"
+
+$ curl -v -X PUT http://json-accumulator-server/db1/doc/metadata/1-94ac6a8be99044f4324cd24d7af43b30 -d '{ "abcd": "updated", "new": "world" }' | grep -i Etag
+< Etag: "2-0947b91fdf12a6cac764a5f9aa1132fa"
+
+$ curl -X GET http://localhost:9090/db1/doc/metadata | jq .
+{
+  "abcd": "updated",
+  "new": "world"
+}
 ```
 
 ##### Use CouchDB views
