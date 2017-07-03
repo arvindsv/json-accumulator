@@ -1,7 +1,14 @@
 ### A generic accumulator for JSON data:
 
-This a reasonably thin wrapper over CouchDB, to be used as a generic accumulator of JSON data by various other apps of
-mine.
+This a reasonably thin wrapper over CouchDB, to be used as a generic accumulator of JSON data by various other apps of mine.
+
+Run it like this:
+
+```
+COUCHDB_PASSWORD=some-password docker-compose up -d
+```
+
+By default (in the docker-compose.yml file), it is set to bind for port 4567.
 
 ##### Add (list-like) data:
 
